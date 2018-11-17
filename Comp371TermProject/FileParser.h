@@ -6,6 +6,7 @@
 #include <fstream>
 #include "Renderable.h"
 #include "Camera.h"
+#include <iostream>
 
 void parseFile(std::string & fileName, std::vector<Renderable*> & objects, Camera & camera) {
 
@@ -13,76 +14,176 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, Camer
 	std::string lineRead;
 	std::getline(inFile, lineRead);
 
-	//objCount = std::stoi(lineRead);
-	//cout << lineRead << endl; 
-
 	while (inFile) {
 		getline(inFile, lineRead);
-		//cout << lineRead << endl;
+		/// CAMERA
 		if (lineRead.compare("camera") == 0)
 		{
-
-			/// Position
-			getline(inFile, lineRead, ' ');
 			std::vector<float> position;
-			float fieldOfView;
-			float focalLength;
-			float aspectRatio; 
+			float fieldOfView, focalLength, aspectRatio;
 
+			getline(inFile, lineRead, ' ');
+
+			// Position
 			for (int i = 0; i < 3; i++) {
 				getline(inFile, lineRead, ' ');
 				position.push_back(std::stof(lineRead));
 			}
-
-			//camera->position = temp;
-			//std::vector<float>().swap(temp);
-
-			/// FoV
+			// Field of view
 			getline(inFile, lineRead);
 			fieldOfView = std::stof(lineRead);
-			/// Focal length
+			// Focal length
 			getline(inFile, lineRead, ' ');
 			getline(inFile, lineRead, ' ');
 			focalLength = std::stof(lineRead);
-			/// Aspect ratio
+			// Aspect ratio
 			getline(inFile, lineRead);
 			aspectRatio = std::stof(lineRead);
 			camera = Camera(position, fieldOfView, focalLength, aspectRatio);
 		}
-		else if (lineRead.compare("plane") == 0)
-			return;
-		else if (lineRead.compare("sphere") == 0)
-		{
-			std::vector<float> position;
-			float radius;
+		/// PLANE
+		else if (lineRead.compare("plane") == 0) {
+			std::vector<float> normal, position, ambient, diffuse, specular;
 			float shininess;
-			std::vector<float> ambient;
-			std::vector<float> diffuse;
-			std::vector<float> specular;
-
-			//objects.push_back(new Sphere);
-			/// Position
+			
 			getline(inFile, lineRead, ' ');
 
+			//normal
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				normal.push_back(std::stof(lineRead));
+			}
+			//position
 			for (int i = 0; i < 3; i++) {
 				getline(inFile, lineRead, ' ');
 				position.push_back(std::stof(lineRead));
 			}
-			
-			/// Radius
+			//ambient
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				ambient.push_back(std::stof(lineRead));
+			}
+			//diffuse
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				diffuse.push_back(std::stof(lineRead));
+			}
+			//specular
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				specular.push_back(std::stof(lineRead));
+			}
+			//shininess
 			getline(inFile, lineRead);
-			radius = std::stof(lineRead);
-			/// Ambient
-			/// Diffuse
-			/// Specular
-			/// Shininess
-			//vector<float>().swap(temp);
-		}
-		else if (lineRead.compare("model") == 0)
-			return;
-		else if (lineRead.compare("light") == 0)
-			return;
+			shininess = std::stof(lineRead);
 
+			objects.push_back(new Plane(normal, position, shininess, ambient, diffuse, specular));
+		}
+		/// SPHERE
+		else if (lineRead.compare("sphere") == 0)
+		{
+			std::vector<float> position, ambient, diffuse, specular;
+			float radius, shininess; 
+
+			getline(inFile, lineRead, ' ');
+
+			// Position
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				position.push_back(std::stof(lineRead));
+			}
+			// Radius
+			getline(inFile, lineRead,' ');
+			radius = std::stof(lineRead);
+			// Ambient
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				ambient.push_back(std::stof(lineRead));
+			}
+			// Diffuse
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				diffuse.push_back(std::stof(lineRead));
+			}
+			// Specular
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				specular.push_back(std::stof(lineRead));
+			}
+			// Shininess
+			getline(inFile, lineRead);
+			shininess = std::stof(lineRead);
+
+			objects.push_back(new Sphere(position, radius, shininess,
+				ambient, diffuse, specular));
+		}
+		/// MODEL
+		else if (lineRead.compare("model") == 0)
+		{
+			std::string file;
+			std::vector<float> ambient, diffuse, specular;
+			float shininess;
+
+			getline(inFile, lineRead, ' ');
+
+			// File
+			getline(inFile, lineRead);
+			file = lineRead; 
+
+			getline(inFile, lineRead, ' ');
+
+			// Ambient
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				ambient.push_back(std::stof(lineRead));
+			}
+			// Diffuse
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				diffuse.push_back(std::stof(lineRead));
+			}
+			// Specular
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				specular.push_back(std::stof(lineRead));
+			}
+			// Shininess
+			getline(inFile, lineRead);
+			shininess = std::stof(lineRead);
+
+			objects.push_back(new Model(shininess, file, ambient, diffuse, specular));
+		}
+		/// LIGHT
+		else if (lineRead.compare("light") == 0) {
+			std::vector<float> position, ambient, diffuse, specular; 
+
+			getline(inFile, lineRead, ' ');
+
+			// Position
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				position.push_back(std::stof(lineRead));
+			}
+			// Ambient
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				ambient.push_back(std::stof(lineRead));
+			}
+			// Diffuse
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				diffuse.push_back(std::stof(lineRead));
+			}
+			// Specular
+			for (int i = 0; i < 3; i++) {
+				getline(inFile, lineRead, ' ');
+				specular.push_back(std::stof(lineRead));
+			}
+
+			objects.push_back(new Light(position, ambient, diffuse, specular));
+
+		}
+		
 	}
 
 	inFile.close();

@@ -39,6 +39,7 @@ Plane::Plane(std::vector<float> normal, std::vector<float> position, float shini
 /// SPHERE
 class Sphere :
 	public Renderable {
+public: 
 	std::vector<float> position;
 	float radius, shininess;
 	Sphere(std::vector<float>, float, float,
@@ -56,7 +57,7 @@ Sphere::Sphere(std::vector<float> position, float radius, float shininess,
 /// MODEL
 class Model :
 	public Renderable {
-	std::vector<float> position;
+public: 
 	float shininess;
 	std::string file;
 	Model(float, std::string, std::vector<float>, std::vector<float>, std::vector<float>);
@@ -71,6 +72,7 @@ Model::Model(float shininess, std::string file,
 
 class Light :
 	public Renderable {
+public:
 	std::vector<float> position;
 	Light(std::vector<float>, std::vector<float>, std::vector<float>, std::vector<float>);
 };
