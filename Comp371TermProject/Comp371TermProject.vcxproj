@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="CImg.h" />
     <ClInclude Include="FileParser.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderable.h" />
