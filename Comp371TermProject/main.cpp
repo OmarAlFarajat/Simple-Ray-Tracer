@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-
+#include <cmath>
 #include "Renderable.h"
 #include "FileParser.h"
 #include "Ray.h"
@@ -12,53 +12,75 @@ using namespace cimg_library;
 
 vector<Renderable*> objects;
 Camera camera;
-
 void vectorToString(vector<float>);
 void printObjects();
-void printCamera(); 
+void printCamera();
 void renderingLoop(int, int);
 
+#define PI 3.14159265
+
 int main() {
-	std::string file = "sceneCube.txt";
+
+	std::string file = "scene5.txt";
 	parseFile(file, objects, camera);
 	printCamera();
-	printObjects(); 
-
-	cout << "Rendering..." << endl; 
-	renderingLoop(800, 600);
+	printObjects();
+	int height = static_cast<int>(2 * camera.focalLength*tan(camera.fieldOfView / 2 * PI / 180.0f));
+	int width = static_cast<int>(camera.aspectRatio * height);
+	cout << "Rendering..." << endl;
+	renderingLoop(width, height);
 	cout << "Finished." << endl;
 
-	return 0; 
+	return 0;
 }
 
 void renderingLoop(int width, int height) {
 	CImg<float> image(width, height, 1, 3, 0);
 
-	std::vector<float> X{ 1.0f, 0.0f, 0.0f };
-	std::vector<float> Y{ 0.0f, 1.0f, 0.0f };
-	std::vector<float> Z{ 0.0f, 0.0f, 1.0f };
-
-	std::vector<float> lookAt{ 0.0f, 0.0f, 0.0f };
-
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
+			vector<float> rayOrigin = { camera.position[0], camera.position[1], camera.position[2] + camera.focalLength };
+			vector<float> pixelPosition = { -static_cast<float>(width) / 2 + x, static_cast<float>(height) / 2 - y, camera.position[2] };
+			vector<float> rayDirection = { pixelPosition[0] - rayOrigin[0],
+				pixelPosition[1] - rayOrigin[1],
+				pixelPosition[2] - rayOrigin[2] };
+			Ray ray = Ray(rayOrigin, rayDirection);
 
-//////// Ray tracing and collision / RGB decision-making goes here. 
+			//////// Ray tracing and collision / RGB decision-making goes here. 
 
-			//Test, assigns random RGB to each pixel. 
-			float color[] = { static_cast <float> (rand()) / static_cast <float> (RAND_MAX),
-				static_cast <float> (rand()) / static_cast <float> (RAND_MAX),
-				static_cast <float> (rand()) / static_cast <float> (RAND_MAX) };
-			image.draw_point(x, y, color);
-				
-				
+						////Test, assigns random RGB to each pixel. 
+
+							//float color[] = { static_cast <float> (rand()) / static_cast <float> (RAND_MAX),
+							//static_cast <float> (rand()) / static_cast <float> (RAND_MAX),
+							//static_cast <float> (rand()) / static_cast <float> (RAND_MAX) };
+
+
+
+
+			for (int i = 0; i < objects.size(); i++) {
+				//if (objects[i]->name.compare("plane") == 0)
+				//	if (static_cast<Plane*>(objects[i])->findIntersection(ray, camera.position) == 1)
+				//		image.draw_point(x, y, color2);
+
+				if (objects[i]->name.compare("sphere") == 0)
+					if (static_cast<Sphere*>(objects[i])->findIntersection(ray, camera.position) == 1) {
+						float color[] = { static_cast<Sphere*>(objects[i])->ambient[0], static_cast<Sphere*>(objects[i])->ambient[1], static_cast<Sphere*>(objects[i])->ambient[2] };
+						image.draw_point(x, y, color);
+					}
+			}
+
+
+
+
+
 		}
 	}
 	image.normalize(0, 255);
 	image.save("render.bmp");
 	cimg_library::CImgDisplay main_disp(image, "Render");
-	while (!main_disp.is_closed()) { main_disp.wait(); 
-	
+	while (!main_disp.is_closed()) {
+		main_disp.wait();
+
 	}
 }
 
