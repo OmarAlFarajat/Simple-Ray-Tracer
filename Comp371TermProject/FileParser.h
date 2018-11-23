@@ -8,7 +8,7 @@
 #include "Camera.h"
 #include <iostream>
 
-void parseFile(std::string & fileName, std::vector<Renderable*> & objects, Camera & camera) {
+void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::vector<Light*> & lights, Camera & camera) {
 
 	std::ifstream inFile(fileName, std::ios::in);
 	std::string lineRead;
@@ -43,6 +43,7 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, Camer
 		}
 		/// PLANE
 		else if (lineRead.compare("plane") == 0) {
+			std::cout << "Found plane" << std::endl; 
 			std::vector<float> normal, position, ambient, diffuse, specular;
 			float shininess;
 			
@@ -156,7 +157,7 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, Camer
 		/// LIGHT
 		else if (lineRead.compare("light") == 0) {
 			std::vector<float> position, ambient, diffuse, specular; 
-
+			std::cout << lineRead << std::endl; 
 			getline(inFile, lineRead, ' ');
 
 			// Position
@@ -175,13 +176,15 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, Camer
 				diffuse.push_back(std::stof(lineRead));
 			}
 			// Specular
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 2; i++) {
 				getline(inFile, lineRead, ' ');
+				std::cout << lineRead << std::endl; 
 				specular.push_back(std::stof(lineRead));
 			}
-
-			objects.push_back(new Light(position, ambient, diffuse, specular));
-
+			getline(inFile, lineRead);
+			specular.push_back(std::stof(lineRead));
+			lights.push_back(new Light(position, ambient, diffuse, specular));
+			
 		}
 		
 	}

@@ -12,6 +12,9 @@ using namespace cimg_library;
 
 vector<Renderable*> objects;
 Camera camera;
+vector<Light*> lights;
+
+
 void vectorToString(vector<float>);
 void printObjects();
 void printCamera();
@@ -22,7 +25,7 @@ void renderingLoop(int, int);
 int main() {
 
 	std::string file = "scene5.txt";
-	parseFile(file, objects, camera);
+	parseFile(file, objects, lights, camera);
 	printCamera();
 	printObjects();
 	int height = static_cast<int>(2 * camera.focalLength*tan(camera.fieldOfView / 2 * PI / 180.0f));
@@ -41,39 +44,71 @@ void renderingLoop(int width, int height) {
 		for (int y = 0; y < height; y++) {
 			vector<float> rayOrigin = { camera.position[0], camera.position[1], camera.position[2] + camera.focalLength };
 			vector<float> pixelPosition = { -static_cast<float>(width) / 2 + x, static_cast<float>(height) / 2 - y, camera.position[2] };
-			vector<float> rayDirection = { pixelPosition[0] - rayOrigin[0],
-				pixelPosition[1] - rayOrigin[1],
-				pixelPosition[2] - rayOrigin[2] };
+			vector<float> rayDirection = subtr(pixelPosition, rayOrigin);
+			//{ pixelPosition[0] - rayOrigin[0],
+			//	pixelPosition[1] - rayOrigin[1],
+			//	pixelPosition[2] - rayOrigin[2] };
 			Ray ray = Ray(rayOrigin, rayDirection);
 
-			//////// Ray tracing and collision / RGB decision-making goes here. 
-
-						////Test, assigns random RGB to each pixel. 
-
-							//float color[] = { static_cast <float> (rand()) / static_cast <float> (RAND_MAX),
-							//static_cast <float> (rand()) / static_cast <float> (RAND_MAX),
-							//static_cast <float> (rand()) / static_cast <float> (RAND_MAX) };
-
-
-
-
+			float tMin = 9999999999.0f;
+			int track = 0;
 			for (int i = 0; i < objects.size(); i++) {
-				//if (objects[i]->name.compare("plane") == 0)
-				//	if (static_cast<Plane*>(objects[i])->findIntersection(ray, camera.position) == 1)
-				//		image.draw_point(x, y, color2);
 
-				if (objects[i]->name.compare("sphere") == 0)
-					if (static_cast<Sphere*>(objects[i])->findIntersection(ray, camera.position) == 1) {
-						float color[] = { static_cast<Sphere*>(objects[i])->ambient[0], static_cast<Sphere*>(objects[i])->ambient[1], static_cast<Sphere*>(objects[i])->ambient[2] };
-						image.draw_point(x, y, color);
+				if (objects[i]->name.compare("plane") == 0) {
+					float t = static_cast<Plane*>(objects[i])->findIntersection(ray, camera.position);
+					if (t > 0) {
+						if (t < tMin) {
+							tMin = t;
+							track = i;
+						}
 					}
+				}
+				if (objects[i]->name.compare("sphere") == 0) {
+					float t = static_cast<Sphere*>(objects[i])->findIntersection(ray, camera.position);
+					if (t > 0) {
+
+						if (t < tMin) {
+							tMin = t;
+							track = i;
+						}
+					}
+				}
 			}
+			//std::vector<float> pixel_color = { 0,0,0 };
 
+			//for (int i = 0; i < lights.size(); i++) {
 
-
-
-
+			//	if (objects[track]->name.compare("sphere") == 0) {
+			//		std::vector<float> P = add(rayOrigin, scalarMulti(tMin, rayDirection));
+			//		std::vector<float> N = normalize(subtr(P, static_cast<Sphere*>(objects[track])->position));
+			//		Ray shadowRay = Ray(N, lights[i]->position);
+			//		for (int j = 0; j < objects.size(); j++) {
+			//			if (objects[j]->name.compare("plane") == 0) {
+			//				float t = static_cast<Plane*>(objects[i])->findIntersection(shadowRay, N);
+			//				if (t < 0) {
+			//					pixel_color = scalarMulti(fmax(0.0f, scalarProduct(N, subtr(lights[i]->position, P))), add(pixel_color, lights[i]->diffuse));
+			//					float color[] = { pixel_color[0], pixel_color[1], pixel_color[2] };
+			//					image.draw_point(x, y, color);
+			//				}
+			//			}
+			//			if (objects[j]->name.compare("sphere") == 0) {
+			//				float t = static_cast<Sphere*>(objects[i])->findIntersection(shadowRay, N);
+			//				if (t < 0) {
+			//					pixel_color = scalarMulti(fmax(0.0f, scalarProduct(N, subtr(lights[i]->position, P))), add(pixel_color, lights[i]->diffuse));
+			//					float color[] = { pixel_color[0], pixel_color[1], pixel_color[2] };
+			//					image.draw_point(x, y, color);
+			//				}
+			//			}
+			//		}
+			//	}
+			//}
+			/////////
+			if (tMin < 9999999999.0f) {
+				float color[] = { objects[track]->ambient[0], objects[track]->ambient[1], objects[track]->ambient[2] };
+				image.draw_point(x, y, color);
+			}
 		}
+
 	}
 	image.normalize(0, 255);
 	image.save("render.bmp");
@@ -83,8 +118,6 @@ void renderingLoop(int width, int height) {
 
 	}
 }
-
-
 
 
 
@@ -132,16 +165,14 @@ void printObjects() {
 			cout << static_cast<Model*>(objects[i])->shininess << endl;
 			cout << endl;
 		}
-		else if ((objects[i]->name).compare("light") == 0) {
-			cout << objects[i]->name << endl;
-			vectorToString(static_cast<Light*>(objects[i])->position);
-			vectorToString(static_cast<Light*>(objects[i])->ambient);
-			vectorToString(static_cast<Light*>(objects[i])->diffuse);
-			vectorToString(static_cast<Light*>(objects[i])->specular);
-			cout << endl;
-		}
 	}
+	for (int i = 0; i < lights.size(); i++) {
 
-
-
+		cout << lights[i]->name << endl;
+		vectorToString(lights[i]->position);
+		vectorToString(lights[i]->ambient);
+		vectorToString(lights[i]->diffuse);
+		vectorToString(lights[i]->specular);
+		cout << endl;
+	}
 }

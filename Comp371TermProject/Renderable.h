@@ -8,6 +8,8 @@
 float scalarProduct(std::vector<float>, std::vector<float>);
 std::vector<float> crossProduct(std::vector<float>, std::vector<float>);
 std::vector<float> add(std::vector<float>, std::vector<float>);
+std::vector<float> subtr(std::vector<float>, std::vector<float>);
+std::vector<float> normalize(std::vector<float>);
 
 /// RENDERABLE
 class Renderable {
@@ -37,7 +39,7 @@ public:
 	float shininess;
 	Plane(std::vector<float>, std::vector<float>, float,
 		std::vector<float>, std::vector<float>, std::vector<float>);
-	int findIntersection(Ray, std::vector<float>);
+	float findIntersection(Ray, std::vector<float>);
 };
 
 Plane::Plane(std::vector<float> normal, std::vector<float> position, float shininess,
@@ -47,18 +49,13 @@ Plane::Plane(std::vector<float> normal, std::vector<float> position, float shini
 	this->position = position;
 	this->shininess = shininess;
 }
-int Plane::findIntersection(Ray ray, std::vector<float> cameraPosition) {
-	float denom = scalarProduct(this->normal, ray.direction);
-	if (denom > 0) {
-		std::vector<float> camPosToPlanePos = {this->position[0] - cameraPosition[0], this->position[1] - cameraPosition[1], this->position[2] - cameraPosition[2]};
-		float t = scalarProduct(camPosToPlanePos, this->normal) / denom;
-		if(t >= 0)
-		return 1;
-		else 
-			return 0;
-	}
-	else
-		return 0;
+float Plane::findIntersection(Ray ray, std::vector<float> cameraPosition) {
+	//https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
+	float t = scalarProduct(subtr(this->position, cameraPosition), this->normal) / scalarProduct(ray.direction, this->normal);
+	if (t > 0)
+		return t; 
+	else return -1; 
+	
 }
 /// SPHERE
 class Sphere :
@@ -82,22 +79,27 @@ float Sphere::findIntersection(Ray ray, std::vector<float> cameraPosition) {
 
 	//http://web.cse.ohio-state.edu/~shen.94/681/Site/Slides_files/basic_algo.pdf
 	// slide 24/55
-
-	//(d.d) t + 2d.(e-c)t + (e-c).(e-c) - R = 0	// a = (d.d)
+	//(d.d) t^2 + 2d.(e-c)t + (e-c).(e-c) - R^2 = 0
+	// a = (d.d)
 	// b = 2*d.(e-c)
 	// c = (e-c).(e-c) - R^2
-	//std::vector<float> centerToOrigin = std::vector<float>{ ray.origin[0] - this->position[0], ray.origin[1] - this->position[1], ray.origin[2] - this->position[2] };
-	std::vector<float> centerToOrigin = std::vector<float>{ cameraPosition[0] - this->position[0], cameraPosition[1] - this->position[1], cameraPosition[2] - this->position[2] };
-
+	std::vector<float> centerToOrigin = subtr(cameraPosition, this->position); 
 	float a = scalarProduct(ray.direction, ray.direction);
 	float b = 2 * scalarProduct(ray.direction, centerToOrigin);
 	float c = scalarProduct(centerToOrigin, centerToOrigin) - pow(this->radius,2);
 	//b^2 – 4ac >= 0 ---> intersection
-	float det = pow(b,2) - 4 * a*c; 
-	if (det >= 0) 
-		return 1;
+	float discriminant = sqrt(pow(b,2) - 4 * a*c); 
+	if (discriminant > 0) {
+		float t0 = (-b + discriminant) / 2 / a;
+		float t1 = (-b - discriminant) / 2 / a;
+		if (t1 < t0)
+			return t1;
+		else
+			return t0;
+	}
 	else
-	return 0;
+		return -1; 
+
 }
 /// TRIANGLE
 class Triangle :
@@ -163,5 +165,23 @@ std::vector<float> add(std::vector<float> a, std::vector<float> b) {
 	{	a[0] + b[0],
 		a[1] + b[1],
 		a[2] + b[2]};
+}
+std::vector<float> subtr(std::vector<float> a, std::vector<float> b) {
+	return std::vector<float>
+	{	a[0] - b[0],
+		a[1] - b[1],
+		a[2] - b[2]};
+}
+std::vector<float> scalarMulti(float a, std::vector<float> b) {
+	return std::vector<float>
+	{	a*b[0],
+		a*b[1],
+		a*b[2]};
+}
+std::vector<float> normalize(std::vector<float> vec) {
+	float mag = sqrt(pow(vec[0],2) + pow(vec[1],2) + pow(vec[2],2));
+	return {	vec[0] / mag,
+				vec[1] / mag,
+				vec[2] / mag };
 }
 #endif
