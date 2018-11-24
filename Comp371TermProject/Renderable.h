@@ -10,6 +10,9 @@ std::vector<float> crossProduct(std::vector<float>, std::vector<float>);
 std::vector<float> add(std::vector<float>, std::vector<float>);
 std::vector<float> subtr(std::vector<float>, std::vector<float>);
 std::vector<float> normalize(std::vector<float>);
+float angle(std::vector<float>, std::vector<float>);
+float magnitude(std::vector<float>);
+std::vector<float> vecMulti(std::vector<float>, std::vector<float>); 
 
 /// RENDERABLE
 class Renderable {
@@ -22,7 +25,7 @@ public:
 
 };
 float Renderable::findIntersection(Ray ray) {
-	return 0;
+	return -1;
 }
 
 Renderable::Renderable(std::vector<float> ambient, std::vector<float> diffuse, std::vector<float> specular) {
@@ -39,7 +42,7 @@ public:
 	float shininess;
 	Plane(std::vector<float>, std::vector<float>, float,
 		std::vector<float>, std::vector<float>, std::vector<float>);
-	float findIntersection(Ray, std::vector<float>);
+	float findIntersection(Ray);
 };
 
 Plane::Plane(std::vector<float> normal, std::vector<float> position, float shininess,
@@ -49,13 +52,16 @@ Plane::Plane(std::vector<float> normal, std::vector<float> position, float shini
 	this->position = position;
 	this->shininess = shininess;
 }
-float Plane::findIntersection(Ray ray, std::vector<float> cameraPosition) {
+float Plane::findIntersection(Ray ray) {
 	//https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
-	float t = scalarProduct(subtr(this->position, cameraPosition), this->normal) / scalarProduct(ray.direction, this->normal);
-	if (t > 0)
-		return t; 
-	else return -1; 
-	
+	float denom = scalarProduct(ray.direction, this->normal);
+
+	if (denom != 0/*denom > 1e-12 || denom < -1e-12*/) {
+		float t = scalarProduct(subtr(this->position, ray.origin), this->normal) / denom;
+		return t;
+	}
+	else return -1;
+
 }
 /// SPHERE
 class Sphere :
@@ -65,7 +71,7 @@ public:
 	float radius, shininess;
 	Sphere(std::vector<float>, float, float,
 		std::vector<float>, std::vector<float>, std::vector<float>);
-	float findIntersection(Ray, std::vector<float>);
+	float findIntersection(Ray);
 };
 
 Sphere::Sphere(std::vector<float> position, float radius, float shininess,
@@ -75,7 +81,7 @@ Sphere::Sphere(std::vector<float> position, float radius, float shininess,
 	this->radius = radius;
 	this->shininess = shininess;
 }
-float Sphere::findIntersection(Ray ray, std::vector<float> cameraPosition) {
+float Sphere::findIntersection(Ray ray) {
 
 	//http://web.cse.ohio-state.edu/~shen.94/681/Site/Slides_files/basic_algo.pdf
 	// slide 24/55
@@ -83,22 +89,23 @@ float Sphere::findIntersection(Ray ray, std::vector<float> cameraPosition) {
 	// a = (d.d)
 	// b = 2*d.(e-c)
 	// c = (e-c).(e-c) - R^2
-	std::vector<float> centerToOrigin = subtr(cameraPosition, this->position); 
+												//normalize(), cameraPos
+	std::vector<float> centerToOrigin = subtr(ray.origin, this->position);
 	float a = scalarProduct(ray.direction, ray.direction);
 	float b = 2 * scalarProduct(ray.direction, centerToOrigin);
-	float c = scalarProduct(centerToOrigin, centerToOrigin) - pow(this->radius,2);
+	float c = scalarProduct(centerToOrigin, centerToOrigin) - pow(this->radius, 2);
 	//b^2 – 4ac >= 0 ---> intersection
-	float discriminant = sqrt(pow(b,2) - 4 * a*c); 
-	if (discriminant > 0) {
-		float t0 = (-b + discriminant) / 2 / a;
-		float t1 = (-b - discriminant) / 2 / a;
+	float discriminant = pow(b, 2) - 4 * a*c;
+	if (discriminant >= 0 && a != 0) {
+		float t0 = (-b + sqrt(discriminant)) / 2 / a;
+		float t1 = (-b - sqrt(discriminant)) / 2 / a;
 		if (t1 < t0)
 			return t1;
 		else
 			return t0;
 	}
 	else
-		return -1; 
+		return -1;
 
 }
 /// TRIANGLE
@@ -178,10 +185,31 @@ std::vector<float> scalarMulti(float a, std::vector<float> b) {
 		a*b[1],
 		a*b[2]};
 }
-std::vector<float> normalize(std::vector<float> vec) {
-	float mag = sqrt(pow(vec[0],2) + pow(vec[1],2) + pow(vec[2],2));
-	return {	vec[0] / mag,
-				vec[1] / mag,
-				vec[2] / mag };
+std::vector<float> vecMulti(std::vector<float> a, std::vector<float> b) {
+	return std::vector<float>
+	{ a[0] * b[0] ,
+		a[1] * b[1],
+		a[2] * b[2]};
 }
+float magnitude(std::vector<float> vec) {
+	return sqrt(pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2)); 
+}
+std::vector<float> normalize(std::vector<float> vec) {
+	float mag = sqrt(pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2));
+	if (mag != 0)
+		return { vec[0] / mag,
+						vec[1] / mag,
+						vec[2] / mag };
+	else
+		return vec;
+
+}
+float angle(std::vector<float> a, std::vector<float> b) {
+
+	float lenSq1 = pow(a[0], 2) + pow(a[1], 2) + pow(a[2], 2);
+	float lenSq2 = pow(b[0], 2) + pow(b[1], 2) + pow(b[2], 2);
+	float angle = acos(scalarProduct(a, b) / sqrt(lenSq1 * lenSq2));
+	return angle;
+}
+
 #endif

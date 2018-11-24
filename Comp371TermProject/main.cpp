@@ -5,6 +5,7 @@
 #include "FileParser.h"
 #include "Ray.h"
 #include "CImg.h"
+
 using namespace std;
 
 using namespace cimg_library;
@@ -24,7 +25,7 @@ void renderingLoop(int, int);
 
 int main() {
 
-	std::string file = "scene5.txt";
+	std::string file = "sceneCube.txt";
 	parseFile(file, objects, lights, camera);
 	printCamera();
 	printObjects();
@@ -42,21 +43,24 @@ void renderingLoop(int width, int height) {
 
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
+
+			// RAY BEING CAST FROM CAMERA
+
+			//e
 			vector<float> rayOrigin = { camera.position[0], camera.position[1], camera.position[2] + camera.focalLength };
+			//s
 			vector<float> pixelPosition = { -static_cast<float>(width) / 2 + x, static_cast<float>(height) / 2 - y, camera.position[2] };
-			vector<float> rayDirection = subtr(pixelPosition, rayOrigin);
-			//{ pixelPosition[0] - rayOrigin[0],
-			//	pixelPosition[1] - rayOrigin[1],
-			//	pixelPosition[2] - rayOrigin[2] };
-			Ray ray = Ray(rayOrigin, rayDirection);
+			// s-e
+			vector<float> rayDirection = normalize(subtr(pixelPosition, rayOrigin));
+			Ray ray = Ray(camera.position, rayDirection);
 
 			float tMin = 9999999999.0f;
 			int track = 0;
 			for (int i = 0; i < objects.size(); i++) {
 
 				if (objects[i]->name.compare("plane") == 0) {
-					float t = static_cast<Plane*>(objects[i])->findIntersection(ray, camera.position);
-					if (t > 0) {
+					float t = static_cast<Plane*>(objects[i])->findIntersection(ray);
+					if (t >= 0) {
 						if (t < tMin) {
 							tMin = t;
 							track = i;
@@ -64,9 +68,8 @@ void renderingLoop(int width, int height) {
 					}
 				}
 				if (objects[i]->name.compare("sphere") == 0) {
-					float t = static_cast<Sphere*>(objects[i])->findIntersection(ray, camera.position);
-					if (t > 0) {
-
+					float t = static_cast<Sphere*>(objects[i])->findIntersection(ray);
+					if (t >= 0) {
 						if (t < tMin) {
 							tMin = t;
 							track = i;
@@ -74,39 +77,118 @@ void renderingLoop(int width, int height) {
 					}
 				}
 			}
-			//std::vector<float> pixel_color = { 0,0,0 };
-
-			//for (int i = 0; i < lights.size(); i++) {
-
-			//	if (objects[track]->name.compare("sphere") == 0) {
-			//		std::vector<float> P = add(rayOrigin, scalarMulti(tMin, rayDirection));
-			//		std::vector<float> N = normalize(subtr(P, static_cast<Sphere*>(objects[track])->position));
-			//		Ray shadowRay = Ray(N, lights[i]->position);
-			//		for (int j = 0; j < objects.size(); j++) {
-			//			if (objects[j]->name.compare("plane") == 0) {
-			//				float t = static_cast<Plane*>(objects[i])->findIntersection(shadowRay, N);
-			//				if (t < 0) {
-			//					pixel_color = scalarMulti(fmax(0.0f, scalarProduct(N, subtr(lights[i]->position, P))), add(pixel_color, lights[i]->diffuse));
-			//					float color[] = { pixel_color[0], pixel_color[1], pixel_color[2] };
-			//					image.draw_point(x, y, color);
-			//				}
-			//			}
-			//			if (objects[j]->name.compare("sphere") == 0) {
-			//				float t = static_cast<Sphere*>(objects[i])->findIntersection(shadowRay, N);
-			//				if (t < 0) {
-			//					pixel_color = scalarMulti(fmax(0.0f, scalarProduct(N, subtr(lights[i]->position, P))), add(pixel_color, lights[i]->diffuse));
-			//					float color[] = { pixel_color[0], pixel_color[1], pixel_color[2] };
-			//					image.draw_point(x, y, color);
-			//				}
-			//			}
-			//		}
-			//	}
-			//}
-			/////////
+			// IF RAY HAS HIT AN OBJECT, AND tMin IS THE INTERSECTION VALUE RETURNED FOR CLOSEST OBJECT
 			if (tMin < 9999999999.0f) {
-				float color[] = { objects[track]->ambient[0], objects[track]->ambient[1], objects[track]->ambient[2] };
-				image.draw_point(x, y, color);
+
+				// Ray intersection position P with offset
+				std::vector<float> offset = { 0.0001f, 0.0001f, 0.0001f };
+				std::vector<float> P = add(add(camera.position, scalarMulti(tMin, rayDirection)), offset);
+
+				// Calculate normal N and retrieve alpha (shininess) depending on object type 
+				std::vector<float> N;
+				float alpha = 0;
+
+				if (objects[track]->name.compare("sphere") == 0) {
+					N = normalize(subtr(P, static_cast<Sphere*>(objects[track])->position));
+					alpha = static_cast<Sphere*>(objects[track])->shininess;
+				}
+				if (objects[track]->name.compare("plane") == 0) {
+					N = normalize(subtr(static_cast<Plane*>(objects[track])->normal, static_cast<Plane*>(objects[track])->position));
+					alpha = static_cast<Plane*>(objects[track])->shininess;
+				}
+
+				//Adapted multiple light modelling code from Assignment 3.
+				for (int i = 0; i < 1; i++) {
+					Ray shadowRay = Ray(P, normalize(subtr(lights[i]->position, P)));
+
+					// Light Direction 
+					std::vector<float> lightDir = normalize(subtr(lights[i]->position, P));
+					// Specular
+					std::vector<float> reflectDir = normalize(subtr(lightDir, scalarMulti(2 * scalarProduct(N, lightDir), N)));
+					// View direction
+					std::vector<float> viewDir = normalize(subtr(P, camera.position));
+					
+				
+
+
+					vector<float> result = add(add(scalarMulti(fmax(scalarProduct(lightDir, N), 0.0f), vecMulti(objects[track]->diffuse, lights[i]->diffuse)),
+						scalarMulti(pow(fmax(scalarProduct(reflectDir, viewDir), 0.0f), alpha), (vecMulti(objects[track]->specular, lights[i]->specular)))), 
+						vecMulti(objects[track]->ambient,lights[i]->ambient)
+						);
+						
+					/// TEST
+//375, 360
+					if (x == 375 && y == 360) {
+						cout << "1: " << endl;
+						vectorToString(P);
+						cout << "Norm: " << endl;
+						vectorToString(N);
+						cout << "Color: " << endl;
+						vectorToString(result);
+						cout << tMin << endl;
+					}
+
+					//375, 470
+					if (x == 375 && y == 470) {
+						cout << "2: " << endl;
+						vectorToString(P);
+						cout << "Norm: " << endl;
+						vectorToString(N);
+						cout << "Color: " << endl;
+						vectorToString(result);
+						cout << tMin << endl;
+					}
+
+					if (x == 775 && y == 280) {
+						cout << "3: " << endl;
+						vectorToString(P);
+						cout << "Norm: " << endl;
+						vectorToString(N);
+						cout << "Color: " << endl;
+						vectorToString(result);
+						cout << tMin << endl;
+					}
+
+					if (x == 990 && y == 460) {
+						cout << "4: " << endl;
+						vectorToString(P);
+						cout << "Norm: " << endl;
+						vectorToString(N);
+						cout << "Color: " << endl;
+						vectorToString(result);
+						cout << tMin << endl;
+					}
+					// Shadow ray intersection loop
+					for (int j = 0; j < objects.size(); j++) {
+
+						if (objects[j]->name.compare("sphere") == 0) {
+							float t = static_cast<Sphere*>(objects[j])->findIntersection(shadowRay);
+							// If shadowRay is obstructed by object, black for shadow
+							if (t >= 0) {
+								
+								float color[] = { 0.75f*result[0], 0.75f*result[1], 0.75f*result[2] };
+								image.draw_point(x, y, color);
+								break;
+							}
+							// Else green for unobstructed sphere or plane
+							else {
+								//float color[] = { 0.0f, 0.0f, 0.0f };
+								float color[] = { result[0], result[1], result[2] };
+								image.draw_point(x, y, color);
+							}
+						}
+					}
+				}
+
+
+
+
 			}
+			/////////
+			//if (tMin < 9999999999.0f) {
+			//	float color[] = { objects[track]->ambient[0], objects[track]->ambient[1], objects[track]->ambient[2] };
+			//	image.draw_point(x, y, color);
+			//}
 		}
 
 	}

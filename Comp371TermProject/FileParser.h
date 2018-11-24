@@ -42,8 +42,7 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::
 			camera = Camera(position, fieldOfView, focalLength, aspectRatio);
 		}
 		/// PLANE
-		else if (lineRead.compare("plane") == 0) {
-			std::cout << "Found plane" << std::endl; 
+		else if (lineRead.compare("plane") == 0) { 
 			std::vector<float> normal, position, ambient, diffuse, specular;
 			float shininess;
 			
@@ -157,7 +156,6 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::
 		/// LIGHT
 		else if (lineRead.compare("light") == 0) {
 			std::vector<float> position, ambient, diffuse, specular; 
-			std::cout << lineRead << std::endl; 
 			getline(inFile, lineRead, ' ');
 
 			// Position
@@ -177,8 +175,7 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::
 			}
 			// Specular
 			for (int i = 0; i < 2; i++) {
-				getline(inFile, lineRead, ' ');
-				std::cout << lineRead << std::endl; 
+				getline(inFile, lineRead, ' '); 
 				specular.push_back(std::stof(lineRead));
 			}
 			getline(inFile, lineRead);
