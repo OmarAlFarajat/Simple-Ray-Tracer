@@ -117,6 +117,49 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::
 			objects.push_back(new Sphere(position, radius, shininess,
 				ambient, diffuse, specular));
 		}
+		/// TRIANGLE
+		else if (lineRead.compare("triangle") == 0)
+		{
+		std::vector<float> v1, v2, v3, ambient, diffuse, specular;
+		float shininess;
+
+		getline(inFile, lineRead, ' ');
+
+		//v1
+		for (int i = 0; i < 3; i++) {
+			getline(inFile, lineRead, ' ');
+			v1.push_back(std::stof(lineRead));
+		}
+		//v2
+		for (int i = 0; i < 3; i++) {
+			getline(inFile, lineRead, ' ');
+			v2.push_back(std::stof(lineRead));
+		}
+		//v3
+		for (int i = 0; i < 3; i++) {
+			getline(inFile, lineRead, ' ');
+			v3.push_back(std::stof(lineRead));
+		}
+		// Ambient
+		for (int i = 0; i < 3; i++) {
+			getline(inFile, lineRead, ' ');
+			ambient.push_back(std::stof(lineRead));
+		}
+		// Diffuse
+		for (int i = 0; i < 3; i++) {
+			getline(inFile, lineRead, ' ');
+			diffuse.push_back(std::stof(lineRead));
+		}
+		// Specular
+		for (int i = 0; i < 3; i++) {
+			getline(inFile, lineRead, ' ');
+			specular.push_back(std::stof(lineRead));
+		}
+		// Shininess
+		getline(inFile, lineRead);
+		shininess = std::stof(lineRead);
+		objects.push_back(new Triangle(v1, v2, v3, shininess, ambient, diffuse, specular));
+		}
 		/// MODEL
 		else if (lineRead.compare("model") == 0)
 		{
