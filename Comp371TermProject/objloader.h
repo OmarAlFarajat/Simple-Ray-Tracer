@@ -3,12 +3,17 @@
 #include <string>
 #include <stdlib.h>
 #include "../glm/glm.hpp"
+#include "Triangle.h"
+#include "Mesh.h"
+#include "Renderable.h"
 
 bool loadOBJ(
 	const char * path,
 	std::vector<glm::vec3> & out_vertices,
 	std::vector<glm::vec3> & out_normals,
-	std::vector<glm::vec2> & out_uvs) {
+	std::vector<glm::vec2> & out_uvs, 
+	Mesh * in_mesh,
+	std::vector<Renderable*> & objects) {
 
 	std::vector<int> vertexIndices, uvIndices, normalIndices;
 	std::vector<glm::vec3> temp_vertices;
@@ -82,9 +87,26 @@ bool loadOBJ(
 					uv = false;
 				}
 			}
+
 			vertexIndices.push_back(vertexIndex[0]);
 			vertexIndices.push_back(vertexIndex[1]);
 			vertexIndices.push_back(vertexIndex[2]);
+
+		
+				glm::vec3 point1 = { temp_vertices[vertexIndex[0]-1].x, temp_vertices[vertexIndex[0]-1].y, temp_vertices[vertexIndex[0]-1].z };
+				glm::vec3 point2 = { temp_vertices[vertexIndex[1]-1].x, temp_vertices[vertexIndex[1]-1].y, temp_vertices[vertexIndex[1]-1].z };
+				glm::vec3 point3 = { temp_vertices[vertexIndex[2]-1].x, temp_vertices[vertexIndex[2]-1].y, temp_vertices[vertexIndex[2]-1].z };
+				
+				std::vector<float> v1 = std::vector<float>{ point1.x, point1.y, point1.z };
+				std::vector<float> v2 = std::vector<float>{ point2.x, point2.y, point2.z };
+				std::vector<float> v3 = std::vector<float>{ point3.x, point3.y, point3.z };
+
+
+			objects.push_back(new Triangle(v1,
+				v2,
+				v3, in_mesh->shininess, in_mesh->ambient, in_mesh->diffuse, in_mesh->specular));
+
+
 			if (norm) {
 				normalIndices.push_back(normalIndex[0]);
 				normalIndices.push_back(normalIndex[1]);

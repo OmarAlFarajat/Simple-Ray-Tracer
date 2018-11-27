@@ -31,44 +31,36 @@ int main() {
 		std::string file;
 		cout << "Please enter the name of a scene file: " << endl;
 		cin >> file;
+
+		std::string meshAnswer;
+		bool meshDraw = false;
+		cout << "Do you want to render meshes in the scene? (yes, or anything else if no)" << endl;
+		cin >> meshAnswer;
+		cout << endl;
+		if (meshAnswer.compare("yes") == 0) {
+			meshDraw = true;
+			cout << "Drawing with mesh" << endl;
+		}
+		else {
+			meshDraw = false; 
+			cout << "Drawing with NO mesh" << endl;
+		}
+
 		parseFile(file, objects, lights, camera);
 
-		// Broken mesh loading
-		//for (int x = 0; x < objects.size(); x++)
-		//{
-		//	if (objects[x]->name.compare("mesh") == 0) {
-		//		std::vector<glm::vec3> vertices;
-		//		std::vector<glm::vec3> normals;
-		//		std::vector<glm::vec2> uvs;		//unused in this program, but loadOBJ requires it as an input parameter 
-		//		std::vector<unsigned short> indices;
-		//		//std::vector<glm::vec3> indexed_vertices;
-		//		//std::vector<glm::vec2> indexed_uvs;	//unused in this program, but indexVBO requires it as an input parameter
-		//		//std::vector<glm::vec3> indexed_normals;
-		//		loadOBJ(static_cast<Mesh*>(objects[x])->file.c_str(), vertices, normals, uvs);
-
-		//		for (int y = 0; y < vertices.size() - 2; y++) {
-		//			objects.push_back(new Triangle(vector<float>{vertices[y].x, vertices[y].y, vertices[y].z},
-		//				vector<float>{vertices[y+1].x, vertices[y+1].y, vertices[y+1].z}, 
-		//				vector<float>{vertices[y+2].x, vertices[y+2].y, vertices[y+2].z}, 
-		//				static_cast<Mesh*>(objects[x])->shininess,
-		//				objects[x]->ambient,
-		//				objects[x]->diffuse,
-		//				objects[x]->specular));
-		//		}
-		//		break;
-
-		//		//objects.push_back(new Triangle(vector<float>{curMesh.Vertices[j].Position.X, curMesh.Vertices[j].Position.Y, curMesh.Vertices[j].Position.Z},
-		//		//	vector<float>{curMesh.Vertices[j + 1].Position.X, curMesh.Vertices[j + 1].Position.Y, curMesh.Vertices[j + 1].Position.Z},
-		//		//	vector<float>{curMesh.Vertices[j + 2].Position.X, curMesh.Vertices[j + 2].Position.Y, curMesh.Vertices[j + 2].Position.Z},
-		//		//	static_cast<Mesh*>(objects[x])->shininess,
-		//		//	objects[x]->ambient,
-		//		//	objects[x]->diffuse,
-		//		//	objects[x]->specular));
-
-		//	}
-		//	
-		//}
-
+		// Mesh loading is still work-in-progress, hence why I added the option to omit meshes from the scene
+		if (meshDraw) {
+			for (int x = 0; x < objects.size(); x++)
+			{
+				if (objects[x]->name.compare("mesh") == 0) {
+					std::vector<glm::vec3> vertices;
+					std::vector<glm::vec3> normals;
+					std::vector<glm::vec2> uvs;		//unused in this program, but loadOBJ requires it as an input parameter 
+					loadOBJ(static_cast<Mesh*>(objects[x])->file.c_str(), vertices, normals, uvs, static_cast<Mesh*>(objects[x]), objects);
+					break;
+				}
+			}
+		}
 		printCamera();
 		printObjects();
 		int height = static_cast<int>(2 * camera.focalLength*tan(camera.fieldOfView / 2 * PI / 180.0f));

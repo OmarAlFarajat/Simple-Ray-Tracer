@@ -4,8 +4,8 @@ c:\users\ohmz\desktop\simple-ray-tracer2\comp371termproject\sphere.h(57): warnin
 c:\users\ohmz\desktop\simple-ray-tracer2\comp371termproject\plane.h(26): warning C4102: 'https': unreferenced label
 c:\users\ohmz\desktop\simple-ray-tracer2\comp371termproject\triangle.h(27): warning C4102: 'https': unreferenced label
   Generating code
-  3 of 1006 functions ( 0.3%) were compiled, the rest were copied from previous compilation.
+  2 of 1217 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    46 functions had inline decision re-evaluated but remain unchanged
+    4 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   Comp371TermProject.vcxproj -> C:\Users\OhmZ\Desktop\Simple-Ray-Tracer2\x64\Release\Comp371TermProject.exe
