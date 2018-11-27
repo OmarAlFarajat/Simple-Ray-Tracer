@@ -5,6 +5,8 @@
 #include "FileParser.h"
 #include "Ray.h"
 #include "CImg.h"
+#include <fstream>
+#include "objloader.h"
 
 using namespace std;
 
@@ -15,7 +17,6 @@ vector<Renderable*> objects;
 Camera camera;
 vector<Light*> lights;
 
-
 void vectorToString(vector<float>);
 void printObjects();
 void printCamera();
@@ -24,48 +25,106 @@ void renderingLoop(int, int);
 #define PI 3.14159265
 
 int main() {
+	bool repeat = true;
 
-	std::string file = "scene5.txt";
-	parseFile(file, objects, lights, camera);
-	printCamera();
-	printObjects();
-	int height = static_cast<int>(2 * camera.focalLength*tan(camera.fieldOfView / 2 * PI / 180.0f));
-	int width = static_cast<int>(camera.aspectRatio * height);
-	cout << "Rendering..." << endl;
-	renderingLoop(width, height);
-	cout << "Finished." << endl;
+	while (repeat) {
+		std::string file;
+		cout << "Please enter the name of a scene file: " << endl;
+		cin >> file;
+		parseFile(file, objects, lights, camera);
 
+		// Broken mesh loading
+		//for (int x = 0; x < objects.size(); x++)
+		//{
+		//	if (objects[x]->name.compare("mesh") == 0) {
+		//		std::vector<glm::vec3> vertices;
+		//		std::vector<glm::vec3> normals;
+		//		std::vector<glm::vec2> uvs;		//unused in this program, but loadOBJ requires it as an input parameter 
+		//		std::vector<unsigned short> indices;
+		//		//std::vector<glm::vec3> indexed_vertices;
+		//		//std::vector<glm::vec2> indexed_uvs;	//unused in this program, but indexVBO requires it as an input parameter
+		//		//std::vector<glm::vec3> indexed_normals;
+		//		loadOBJ(static_cast<Mesh*>(objects[x])->file.c_str(), vertices, normals, uvs);
+
+		//		for (int y = 0; y < vertices.size() - 2; y++) {
+		//			objects.push_back(new Triangle(vector<float>{vertices[y].x, vertices[y].y, vertices[y].z},
+		//				vector<float>{vertices[y+1].x, vertices[y+1].y, vertices[y+1].z}, 
+		//				vector<float>{vertices[y+2].x, vertices[y+2].y, vertices[y+2].z}, 
+		//				static_cast<Mesh*>(objects[x])->shininess,
+		//				objects[x]->ambient,
+		//				objects[x]->diffuse,
+		//				objects[x]->specular));
+		//		}
+		//		break;
+
+		//		//objects.push_back(new Triangle(vector<float>{curMesh.Vertices[j].Position.X, curMesh.Vertices[j].Position.Y, curMesh.Vertices[j].Position.Z},
+		//		//	vector<float>{curMesh.Vertices[j + 1].Position.X, curMesh.Vertices[j + 1].Position.Y, curMesh.Vertices[j + 1].Position.Z},
+		//		//	vector<float>{curMesh.Vertices[j + 2].Position.X, curMesh.Vertices[j + 2].Position.Y, curMesh.Vertices[j + 2].Position.Z},
+		//		//	static_cast<Mesh*>(objects[x])->shininess,
+		//		//	objects[x]->ambient,
+		//		//	objects[x]->diffuse,
+		//		//	objects[x]->specular));
+
+		//	}
+		//	
+		//}
+
+		printCamera();
+		printObjects();
+		int height = static_cast<int>(2 * camera.focalLength*tan(camera.fieldOfView / 2 * PI / 180.0f));
+		int width = static_cast<int>(camera.aspectRatio * height);
+
+		// MAIN RENDER LOOP
+		cout << "Rendering..." << endl;
+		renderingLoop(width, height);
+		cout << "Finished." << endl;
+
+		std::string answer;
+		cout << "Would you like to render another scene? (yes, or anything else if no)" << endl;
+		cin >> answer;
+		cout << endl;
+		if (answer.compare("yes") != 0) {
+			repeat = false;
+			cout << "Exiting the program..." << endl;
+		}
+		else {
+			objects.clear();
+			lights.clear();
+		}
+	}
 	return 0;
 }
 
 void renderingLoop(int width, int height) {
 	CImg<float> image(width, height, 1, 3, 0);
 
+	// Nested loop over each pixel, top left corner to bottom right corner. 
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
 
-			// RAY BEING CAST FROM CAMERA
 
-			//e
+			// RAY BEING CAST FROM CAMERA
+			// http://web.cse.ohio-state.edu/~shen.94/681/Site/Slides_files/basic_algo.pdf
 			vector<float> rayOrigin = { camera.position[0], camera.position[1], camera.position[2] + camera.focalLength };
-			//s
 			vector<float> pixelPosition = { -static_cast<float>(width) / 2 + x, static_cast<float>(height) / 2 - y, camera.position[2] };
-			// s-e
 			vector<float> rayDirection = normalize(subtr(pixelPosition, rayOrigin));
 			Ray ray = Ray(camera.position, rayDirection);
 
-			float tMin = 9999999999.0f;
+			// Values used to track the smallest value of t and the object associated with that value (i.e. the closest hit by the ray)
+			float tMin = INFINITY;
 			int track = 0;
+
+
 			for (int i = 0; i < objects.size(); i++) {
-				//if (objects[i]->name.compare("sphere") == 0) {
-				//	float t = static_cast<Sphere*>(objects[i])->findIntersection(ray);
-				//	if (t > 0) {
-				//		if (t < tMin) {
-				//			tMin = t;
-				//			track = i;
-				//		}
-				//	}
-				//}
+				if (objects[i]->name.compare("sphere") == 0) {
+					float t = static_cast<Sphere*>(objects[i])->findIntersection(ray);
+					if (t > 0) {
+						if (t < tMin) {
+							tMin = t;
+							track = i;
+						}
+					}
+				}
 				if (objects[i]->name.compare("plane") == 0) {
 					float t = static_cast<Plane*>(objects[i])->findIntersection(ray);
 					if (t > 0) {
@@ -86,24 +145,30 @@ void renderingLoop(int width, int height) {
 				}
 
 			}
-			// IF RAY HAS HIT AN OBJECT, AND tMin IS THE INTERSECTION VALUE RETURNED FOR CLOSEST OBJECT
-			if (tMin < 9999999999.0f) {
 
-				// Ray intersection position P with offset
-				std::vector<float> offset = { -0.0001f, -0.0001f, -0.0001f };
-				std::vector<float> P = add(add(camera.position, scalarMulti(tMin, rayDirection)), offset);
-				
+			// The ray from the camera has hit something if the value for t is less than infinity
+			if (tMin < INFINITY) {
+				vector<float> totalDiffuse = { 0.0f, 0.0f, 0.0f };
+				vector<float> totalSpecular = { 0.0f, 0.0f, 0.0f };
+				vector<float> totalAmbient = { 0.0f, 0.0f, 0.0f };
+
+				//// Ray intersection position P with offset
+				//std::vector<float> offset = { 0.001f, 0.001f, 0.001f };
+
+				// 3D parametric line equation: p(t) = e + t(s-e)
+				std::vector<float> P = add(camera.position, scalarMulti(tMin, rayDirection));
+
 
 				// Calculate normal N and retrieve alpha (shininess) depending on object type 
 				std::vector<float> N;
 				float alpha = 0;
 
-				//if (objects[track]->name.compare("sphere") == 0) {
-				//	N = normalize(subtr(P, static_cast<Sphere*>(objects[track])->position));
-				//	alpha = static_cast<Sphere*>(objects[track])->shininess;
-				//}
+				if (objects[track]->name.compare("sphere") == 0) {
+					N = normalize(subtr(P, static_cast<Sphere*>(objects[track])->position));
+					alpha = static_cast<Sphere*>(objects[track])->shininess;
+				}
 				if (objects[track]->name.compare("plane") == 0) {
-					N = normalize(subtr(static_cast<Plane*>(objects[track])->normal, static_cast<Plane*>(objects[track])->position));
+					N = static_cast<Plane*>(objects[track])->normal;
 					alpha = static_cast<Plane*>(objects[track])->shininess;
 				}
 				if (objects[track]->name.compare("triangle") == 0) {
@@ -113,59 +178,78 @@ void renderingLoop(int width, int height) {
 					alpha = static_cast<Triangle*>(objects[track])->shininess;
 				}
 
-				Ray shadowRay;
 
-				float Red = 0.0f;
-				float Green = 0.0f;
-				float Blue = 0.0f;
+
+
 
 				//https://pages.cpsc.ucalgary.ca/~brosz/TA/453f08/labnotes/Lab%2018%20-%20Phong%20Lighting.pdf
 				for (int i = 0; i < lights.size(); i++) {
 
+					Ray shadowRay = Ray(P, normalize(subtr(lights[i]->position, P)));
 
-					shadowRay = Ray(P, normalize(subtr(lights[i]->position, P)));
-
+					// http://web.cse.ohio-state.edu/~shen.94/681/Site/Slides_files/illum_large.pdf
 					// Light Direction 
 					std::vector<float> lightDir = normalize(subtr(lights[i]->position, P));
 					// Specular
 					std::vector<float> reflectDir = normalize(subtr(scalarMulti(2 * dotProduct(N, lightDir), N), lightDir));
 					// View direction
 					std::vector<float> viewDir = normalize(subtr(camera.position, P));
-					
-					vector<float> result = add(add(scalarMulti(fmax(dotProduct(lightDir, N), 0.0f), vectMulti(objects[track]->diffuse, lights[i]->diffuse)),
-						scalarMulti(pow(fmax(dotProduct(reflectDir, viewDir), 0.0f), alpha), (vectMulti(objects[track]->specular, lights[i]->specular)))), 
-						vectMulti(objects[track]->ambient,lights[i]->ambient)
-						);
 
-					// Shadow ray intersection loop
+					vector<float> diffuse = scalarMulti(fmax(dotProduct(lightDir, N), 0.0f), lights[i]->diffuse);
+					vector<float> specular = scalarMulti(pow(fmax(dotProduct(reflectDir, viewDir), 0.0f), alpha), lights[i]->specular);
+					vector<float> ambient = vectMulti(objects[track]->ambient, lights[i]->ambient);
+
+					// Testing for each shape, if there's no obstructing object, assign RGB contributions
 					for (int j = 0; j < objects.size(); j++) {
 
-						if (objects[j]->name.compare("triangle") == 0) {
+						if (objects[j]->name.compare("triangle") == 0 && objects[j] != objects[track]) {
 							float t = static_cast<Triangle*>(objects[j])->findIntersection(shadowRay);
-						
-							if (t < 0) {
-								Red += result[0] / lights.size();
-								Green += result[1] / lights.size();
-								Blue += result[2] / lights.size();
 
+							if (t < 0) {
+								totalDiffuse = add(totalDiffuse, diffuse);
+								totalSpecular = add(totalSpecular, specular);
+								totalAmbient = add(totalAmbient, ambient);
+
+							}
+
+						}
+
+						if (objects[j]->name.compare("sphere") == 0 && objects[j] != objects[track]) {
+							float t = static_cast<Sphere*>(objects[j])->findIntersection(shadowRay);
+
+							if (t < 0) {
+								totalDiffuse = add(totalDiffuse, diffuse);
+								totalSpecular = add(totalSpecular, specular);
+								totalAmbient = add(totalAmbient, ambient);
+							}
+
+						}
+
+						if (objects[j]->name.compare("plane") == 0 && objects[j] != objects[track]) {
+							float t = static_cast<Plane*>(objects[j])->findIntersection(shadowRay);
+							if (t < 0) {
+								totalDiffuse = add(totalDiffuse, diffuse);
+								totalSpecular = add(totalSpecular, specular);
+								totalAmbient = add(totalAmbient, ambient);
 							}
 						}
 
-						if (objects[j]->name.compare("sphere") == 0) {
-							float t = static_cast<Sphere*>(objects[j])->findIntersection(shadowRay);
-							
-							if (t < 0) {
-								Red += result[0] / lights.size();
-								Green += result[1] / lights.size();
-								Blue += result[2] / lights.size();
-							}					
-						}
-			
 					}
+					totalDiffuse = vectMulti(objects[track]->diffuse, totalDiffuse);
+					totalSpecular = vectMulti(objects[track]->specular, totalSpecular);
+					totalAmbient = vectMulti(objects[track]->ambient, totalAmbient);
+
+					vector<float> result = add(add(totalDiffuse, totalSpecular), totalAmbient);
+					result = { result[0] / lights.size(), result[1] / lights.size(), result[2] / lights.size() };
+
+					float color[] = { result[0], result[1], result[2] };
+
+					image.draw_point(x, y, color);
 				}
-				float color[] = { Red, Green, Blue };
-				image.draw_point(x, y, color);
+
+
 			}
+
 		}
 
 	}
@@ -175,6 +259,8 @@ void renderingLoop(int width, int height) {
 	while (!main_disp.is_closed()) {
 		main_disp.wait();
 	}
+
+
 }
 
 
@@ -214,13 +300,13 @@ void printObjects() {
 			cout << static_cast<Sphere*>(objects[i])->shininess << endl;
 			cout << endl;
 		}
-		else if ((objects[i]->name).compare("model") == 0) {
+		else if ((objects[i]->name).compare("mesh") == 0) {
 			cout << objects[i]->name << endl;
-			cout << static_cast<Model*>(objects[i])->file << endl;
-			vectorToString(static_cast<Model*>(objects[i])->ambient);
-			vectorToString(static_cast<Model*>(objects[i])->diffuse);
-			vectorToString(static_cast<Model*>(objects[i])->specular);
-			cout << static_cast<Model*>(objects[i])->shininess << endl;
+			cout << static_cast<Mesh*>(objects[i])->file << endl;
+			vectorToString(static_cast<Mesh*>(objects[i])->ambient);
+			vectorToString(static_cast<Mesh*>(objects[i])->diffuse);
+			vectorToString(static_cast<Mesh*>(objects[i])->specular);
+			cout << static_cast<Mesh*>(objects[i])->shininess << endl;
 			cout << endl;
 		}
 		else if ((objects[i]->name).compare("triangle") == 0) {

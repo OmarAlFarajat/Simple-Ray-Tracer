@@ -6,6 +6,11 @@
 #include <fstream>
 #include "Renderable.h"
 #include "Camera.h"
+#include "Sphere.h"
+#include "Mesh.h"
+#include "Triangle.h"
+#include "Plane.h"
+#include "Light.h"
 #include <iostream>
 
 void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::vector<Light*> & lights, Camera & camera) {
@@ -161,7 +166,7 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::
 		objects.push_back(new Triangle(v1, v2, v3, shininess, ambient, diffuse, specular));
 		}
 		/// MODEL
-		else if (lineRead.compare("model") == 0)
+		else if (lineRead.compare("mesh") == 0)
 		{
 			std::string file;
 			std::vector<float> ambient, diffuse, specular;
@@ -194,7 +199,7 @@ void parseFile(std::string & fileName, std::vector<Renderable*> & objects, std::
 			getline(inFile, lineRead);
 			shininess = std::stof(lineRead);
 
-			objects.push_back(new Model(shininess, file, ambient, diffuse, specular));
+			objects.push_back(new Mesh(shininess, file, ambient, diffuse, specular));
 		}
 		/// LIGHT
 		else if (lineRead.compare("light") == 0) {

@@ -1,2 +1,4 @@
 ﻿  main.cpp
-  Comp371TermProject.vcxproj -> C:\Users\OhmZ\Desktop\Simple-Ray-Tracer\x64\Debug\Comp371TermProject.exe
+c:\users\ohmz\desktop\simple-ray-tracer2\comp371termproject\renderable.h(154): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  LINK : C:\Users\OhmZ\Desktop\Simple-Ray-Tracer2\x64\Debug\Comp371TermProject.exe not found or not built by the last incremental link; performing full link
+  Comp371TermProject.vcxproj -> C:\Users\OhmZ\Desktop\Simple-Ray-Tracer2\x64\Debug\Comp371TermProject.exe
